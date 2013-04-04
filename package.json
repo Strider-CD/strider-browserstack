@@ -1,0 +1,23 @@
+{
+  "name": "strider-browserstack",
+  "version": "0.0.0",
+  "description": "Strider support for Browserstack.com",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Strider-CD/strider-browserstack.git"
+  },
+  "keywords": [
+    "strider"
+  ],
+  "author": "Niall O'Higgins (niallo@frozenridge.co)",
+  "license": "BSD",
+  "readmeFilename": "README.md",
+  "gitHead": "c95fd1ac6bd0d3707b549cdbd432a41723613ed4",
+  "dependencies": {
+    "browserstack-cli": "https://github.com/niallo/browserstack-cli/archive/master.tar.gz"
+  }
+}
