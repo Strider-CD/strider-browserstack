@@ -9,7 +9,7 @@ module.exports = function(ctx, cb) {
    * GET /api/browserstack/
    *
    * Get the current Strider config for specified project. This will be a JSON-encoded
-   * object with the keys: browserstack_username, browserstack_access_key and browserstack_browsers
+   * object with the keys: browserstack_api_key and browserstack_browsers
    *
    * @param url Github html_url of the project.
    */
@@ -34,8 +34,7 @@ module.exports = function(ctx, cb) {
         status: "ok",
         errors: [],
         results: {
-          browserstack_username: repo.get('browserstack_username'),
-          browserstack_access_key: repo.get('browserstack_access_key'),
+          browserstack_api_key: repo.get('browserstack_api_key'),
           browserstack_browsers: repo.get('browserstack_browsers'),
         }
       }
@@ -49,15 +48,13 @@ module.exports = function(ctx, cb) {
    * Set the current Strider config for specified project.
    *
    * @param url Github html_url of the project.
-   * @param browserstack_username Browserstack username.
-   * @param browserstack_access_key Browserstack access key.
+   * @param browserstack_api_key Browserstack api key.
    * @param browserstack_browsers JSON-encoded list of object tuples.
    *
    */
   function postIndex(req, res) {
     var url = req.param("url")
-    var browserstack_username = req.param("browserstack_username")
-    var browserstack_access_key = req.param("browserstack_access_key")
+    var browserstack_api_key = req.param("browserstack_api_key")
     var browserstack_browsers = req.param("browserstack_browsers")
 
     function error(err_msg) {
@@ -82,11 +79,8 @@ module.exports = function(ctx, cb) {
         return error("You must have access level greater than 0 in order to be able to configure Browserstack.");
       }
       var q = {$set:{}}
-      if (browserstack_username) {
-        repo.set('browserstack_username', browserstack_username)
-      }
-      if (browserstack_access_key) {
-        repo.set('browserstack_access_key', browserstack_access_key)
+      if (browserstack_api_key) {
+        repo.set('browserstack_api_key', browserstack_api_key)
       }
       if (browserstack_browsers) {
         var invalid = false
@@ -107,12 +101,11 @@ module.exports = function(ctx, cb) {
         status: "ok",
         errors: [],
         results: {
-          browserstack_username: repo.get('browserstack_username'),
-          browserstack_access_key: repo.get('browserstack_access_key'),
+          browserstack_api_key: repo.get('browserstack_api_key'),
           browserstack_browsers: repo.get('browserstack_browsers'),
         }
       }
-      if (browserstack_username || browserstack_access_key || browserstack_browsers) {
+      if (browserstack_api_key || browserstack_browsers) {
         req.user.save(function(err) {
             if (err) {
               var errmsg = "Error saving browserstack config " + req.user.email + ": " + err;
@@ -130,8 +123,7 @@ module.exports = function(ctx, cb) {
   // Extend RepoConfig model with 'Browserstack' properties
   function browserstackPlugin(schema, opts) {
     schema.add({
-      browserstack_access_key: String,
-      browserstack_username: String,
+      browserstack_api_key: String,
       browserstack_browsers: [],
     })
   }
