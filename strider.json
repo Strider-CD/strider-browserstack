@@ -1,3 +1,4 @@
 {
-  "webapp":"webapp.js"
+  "webapp":"webapp.js",
+  "worker":"worker.js"
 }
