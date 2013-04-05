@@ -18,6 +18,6 @@
   "readmeFilename": "README.md",
   "gitHead": "c95fd1ac6bd0d3707b549cdbd432a41723613ed4",
   "dependencies": {
-    "browserstack-cli": "https://github.com/niallo/browserstack-cli/archive/master.tar.gz"
+    "browserstack-cli": "~0.2.5"
   }
 }
