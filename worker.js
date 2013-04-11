@@ -18,6 +18,9 @@ var HTTP_CHECK_INTERVAL = 1000
 // Browser Stack Connector will tunnel from this to BrowserStack Cloud for tests
 var HTTP_PORT = 8031
 
+var connectorProc
+var serverProc
+
 // Read & parse a JSON file
 function getJson(filename, cb) {
   fs.readFile(filename, function(err, data) {
@@ -33,6 +36,17 @@ function getJson(filename, cb) {
 
 // This will shut down the tunnel
 function cleanup(ctx, cb) {
+  done = true
+  ctx.striderMessage("Shutting down Sauce Connector")
+  connectorProc.kill("SIGINT")
+  ctx.striderMessage("Shutting down server")
+  serverProc.kill()
+  // Give BrowserStack Connector & server 5 seconds to gracefully stop before sending SIGKILL
+  setTimeout(function() {
+    connectorProc.kill("SIGKILL")
+    serverProc.kill("SIGKILL")
+    return cb(finaleStatusCode)
+  }, 5000)
   cb(0)
 }
 
@@ -74,7 +88,7 @@ function test(ctx, cb) {
 
     // Start the app, suggesting a port via PORT environment variable
     var tsh = ctx.shellWrap("exec " + packageJson.scripts.start)
-    var serverProc = ctx.forkProc({
+    serverProc = ctx.forkProc({
       args:tsh.args,
       cmd:tsh.cmd,
       cwd:ctx.workingDir,
@@ -126,15 +140,17 @@ function test(ctx, cb) {
     }, HTTP_CHECK_INTERVAL)
 
     // Start the BrowserStack Connector. Returns childProcess object.
-    function startConnector(username, apiKey, cb) {
-      // XXX TODO
-      return ctx.forkProc(ctx.workingDir, jsh.cmd, jsh.args, cb)
+    function startConnector(username, password, apiKey, cb) {
+      var tcmd = path.join(__dirname, "node_modules", "browserstack-cli", "bin", "cli.js") + " --ssl -k " + apiKey + " -u " + username + ":" + password + " tunnel localhost:" + HTTP_PORT
+      console.log("tcmd: ", tcmd)
+      var tsh = ctx.shellWrap(tcmd)
+      return ctx.forkProc(ctx.workingDir, tsh.cmd, tsh.args, cb)
     }
 
     // Server is up, start BrowserStack Connector and run the tests via `npm browserstack` invocations
     function serverUp() {
       var done = false
-      var connectorProc = startConnector(browserstackUsername, browserstackAccessKey,
+      connectorProc = startConnector(browserStackUsername, browserStackPassword, browserStackAPIKey,
         function(exitCode) {
         console.log("Connector exited with code: %d", exitCode)
         serverProc.kill("SIGKILL")
@@ -152,6 +168,7 @@ function test(ctx, cb) {
       connectorProc.stdout.on('data', function(data) {
         if (/Press Ctrl-C to exit/.exec(data) !== null) {
           ctx.striderMessage("BrowserStack tunnel is ready")
+          /*
           var browserstacksh = ctx.shellWrap(ctx.npmCmd + " run-script browserstack")
           var browserstackDoneCount = 0
           var finaleStatusCode = 0
@@ -192,6 +209,7 @@ function test(ctx, cb) {
               }
             })
           })
+          */
         }
       })
     }
