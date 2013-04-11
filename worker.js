@@ -3,6 +3,7 @@
 //
 
 
+var browserstack = require('browserstack')
 var fs = require('fs')
 var path = require('path')
 var request = require('request')
@@ -37,7 +38,7 @@ function getJson(filename, cb) {
 // This will shut down the tunnel
 function cleanup(ctx, cb) {
   done = true
-  ctx.striderMessage("Shutting down Sauce Connector")
+  ctx.striderMessage("Shutting down BrowserStack Connector")
   connectorProc.kill("SIGINT")
   ctx.striderMessage("Shutting down server")
   serverProc.kill()
@@ -45,9 +46,8 @@ function cleanup(ctx, cb) {
   setTimeout(function() {
     connectorProc.kill("SIGKILL")
     serverProc.kill("SIGKILL")
-    return cb(finaleStatusCode)
+    return cb(0)
   }, 5000)
-  cb(0)
 }
 
 // then we start the BrowserStack test process.
@@ -168,48 +168,33 @@ function test(ctx, cb) {
       connectorProc.stdout.on('data', function(data) {
         if (/Press Ctrl-C to exit/.exec(data) !== null) {
           ctx.striderMessage("BrowserStack tunnel is ready")
-          /*
-          var browserstacksh = ctx.shellWrap(ctx.npmCmd + " run-script browserstack")
-          var browserstackDoneCount = 0
-          var finaleStatusCode = 0
-          browserStackBrowsers.forEach(function(o) {
-            ctx.striderMessage("Starting: BROWSERSTACK_BROWSER="+o.browserName
-              +" BROWSERSTACK_OS="+o.platform+" BROWSERSTACK_BROWSER_VERSION="+o.version+" npm run-script browserstack")
-            var browserStackProc = ctx.forkProc({
-              args: browserstacksh.args,
-              cmd: browserstacksh.cmd,
-              cwd: ctx.workingDir,
-              env: {
-                BROWSERSTACK_USERNAME:browserstackUsername,
-                BROWSERSTACK_ACCESS_KEY:browserstackAccessKey,
-                BROWSERSTACK_OS:o.platform,
-                BROWSERSTACK_BROWSER_VERSION:o.version || '',
-                BROWSERSTACK_BROWSER:o.browserName,
-              }
-            }, function(code) {
-              ctx.striderMessage("Exit code "+code
-                +" for: BROWSERSTACK_BROWSER="+o.browserName +" BROWSERSTACK_OS="+o.platform+" BROWSERSTACK_BROWSER_VERSION="+o.version+" npm run-script browserstack")
-              browserstackDoneCount++
-              // If a single test fails, the whole test job fails.
-              if (finaleStatusCode === 0 && code !== 0) {
-                finaleStatusCode = 1
-              }
-              if (!done && browserstackDoneCount === browserstackBrowsers.length) {
-                done = true
-                ctx.striderMessage("Shutting down Sauce Connector")
-                connectorProc.kill("SIGINT")
-                ctx.striderMessage("Shutting down server")
-                serverProc.kill()
-                // Give BrowserStack Connector & server 5 seconds to gracefully stop before sending SIGKILL
-                setTimeout(function() {
-                  connectorProc.kill("SIGKILL")
-                  serverProc.kill("SIGKILL")
-                  return cb(finaleStatusCode)
-                }, 5000)
-              }
-            })
+
+          var client = browserstack.createClient({
+              username: browserStackUsername,
+              password: browserStackPassword
           })
-          */
+
+          // Create a Chrome worker for now.
+          client.createWorker({
+            os: 'win',
+            browser: 'chrome',
+            version: '27.0',
+            url: 'http://localhost:' + HTTP_PORT,
+            timeout: 60
+          }, function(err, worker) {
+            if (err) {
+              ctx.striderMessage("Error creating BrowserStack worker: " + err)
+              return cb(1)
+            }
+            ctx.striderMessage("Created BrowserStack worker: " + worker)
+
+          })
+
+          ctx.events.on('testDone', function(data) {
+            console.log("received testDone event: %j", data)
+            cb(0)
+          })
+
         }
       })
     }
