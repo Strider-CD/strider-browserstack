@@ -24,6 +24,8 @@ define(
             var browsers = data.results.browserstack_browsers || [];
             setBrowsers(browsers);
             elem.find('.browserstack-api-key').val(data.results.browserstack_api_key);
+            elem.find('.browserstack-username').val(data.results.browserstack_username);
+            elem.find('.browserstack-password').val(data.results.browserstack_password);
             elem.find('.details').show();
             message_hide();
           },
@@ -70,10 +72,14 @@ define(
         "click #browserstack-save": function() {
           var browserstack_browsers = getBrowsers();
           var browserstack_api_key = elem.find(".browserstack-api-key").val();
+          var browserstack_username = elem.find(".browserstack-username").val();
+          var browserstack_password = elem.find(".browserstack-password").val();
           $.ajax("/api/browserstack", {
                 data: {
                   url:params.repo_url,
                   browserstack_api_key:browserstack_api_key,
+                  browserstack_username:browserstack_username,
+                  browserstack_password:browserstack_password,
                   browserstack_browsers: JSON.stringify(browserstack_browsers)
                 },
                 error: function(xhr, ts, e) {

@@ -31,12 +31,16 @@ function getJson(filename, cb) {
   })
 }
 
-// `npm install` has succeeded at this point.
-// We run `npm test` and assuming that has passed,
+// This will shut down the tunnel
+function cleanup(ctx, cb) {
+  cb(0)
+}
+
 // then we start the BrowserStack test process.
-// If `npm test` fails, we don't bother with the overhead of running the BrowserStack tests.
 function test(ctx, cb) {
   var browserStackAPIKey = ctx.jobData.repo_config.browserstack_api_key
+  var browserStackUsername = ctx.jobData.repo_config.browserstack_username
+  var browserStackPassword = ctx.jobData.repo_config.browserstack_password
   var browserStackBrowsers = ctx.jobData.repo_config.browserstack_browsers
   if (browserStackBrowsers === undefined || browserStackBrowsers.length === 0) {
     // XXX Some default
@@ -48,7 +52,7 @@ function test(ctx, cb) {
       }
     ]
   }
-  if (browserStackAPIKey === undefined) {
+  if (browserStackAPIKey === undefined || browserStackPassword === undefined || browserStackUsername === undefined) {
     ctx.striderMessage(("BrowserStack tests detected but BrowserStack credentials have not been configured!\n"
       + "  Please visit project config page to enter them"))
     return cb(1)
@@ -56,18 +60,12 @@ function test(ctx, cb) {
   var startPhaseDone = false
   var tsh = ctx.shellWrap(ctx.npmCmd + " test")
   // Run 
-  ctx.forkProc(ctx.workingDir, tsh.cmd, tsh.args, function(exitCode) {
-    if (exitCode !== 0) {
-      return cb(exitCode)
-    } else {
-      ctx.striderMessage("npm test success - trying BrowserStack tests...")
-      // Parse package.json so we can run the start script directly.
-      // This is important because `npm start` will fork a subprocess a la shell
-      // which means we cannot track the PID and shut it down later.
-      getJson(path.join(ctx.workingDir, "package.json"), npmTestPassed)
-    }
-  })
-  function npmTestPassed(err, packageJson) {
+  ctx.striderMessage("npm test success - trying BrowserStack tests...")
+  // Parse package.json so we can run the start script directly.
+  // This is important because `npm start` will fork a subprocess a la shell
+  // which means we cannot track the PID and shut it down later.
+  getJson(path.join(ctx.workingDir, "package.json"), go)
+  function go(err, packageJson) {
     if (err || packageJson.scripts === undefined || packageJson.scripts.start === undefined) {
       striderMessage("could not read package.json to find start command - failing test")
       return cb(1)
@@ -149,10 +147,11 @@ function test(ctx, cb) {
         }
       })
 
-      // Wait until connector outputs "You may start your tests"
+      // Wait until connector outputs "Press Ctrl-C to exit"
       // before executing tests
       connectorProc.stdout.on('data', function(data) {
         if (/Press Ctrl-C to exit/.exec(data) !== null) {
+          ctx.striderMessage("BrowserStack tunnel is ready")
           var browserstacksh = ctx.shellWrap(ctx.npmCmd + " run-script browserstack")
           var browserstackDoneCount = 0
           var finaleStatusCode = 0
@@ -202,13 +201,8 @@ function test(ctx, cb) {
 
 module.exports = function(ctx, cb) {
 
-  ctx.addDetectionRule({
-    filename:"package.json",
-    jsonKeyExists:"scripts.browserstack",
-    language:"node.js",
-    framework:null,
-    hasSauce:true,
-    prepare:ctx.npmCmd + " install",
+  ctx.addBuildHook({
+    cleanup:cleanup,
     test:test
   })
 

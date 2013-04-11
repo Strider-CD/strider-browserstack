@@ -35,6 +35,8 @@ module.exports = function(ctx, cb) {
         errors: [],
         results: {
           browserstack_api_key: repo.get('browserstack_api_key'),
+          browserstack_username: repo.get('browserstack_username'),
+          browserstack_password: repo.get('browserstack_password'),
           browserstack_browsers: repo.get('browserstack_browsers'),
         }
       }
@@ -49,16 +51,20 @@ module.exports = function(ctx, cb) {
    *
    * @param url Github html_url of the project.
    * @param browserstack_api_key Browserstack api key.
+   * @param browserstack_username Browserstack username.
+   * @param browserstack_password Browserstack password.
    * @param browserstack_browsers JSON-encoded list of object tuples.
    *
    */
   function postIndex(req, res) {
     var url = req.param("url")
     var browserstack_api_key = req.param("browserstack_api_key")
+    var browserstack_username = req.param("browserstack_username")
+    var browserstack_password = req.param("browserstack_password")
     var browserstack_browsers = req.param("browserstack_browsers")
 
     function error(err_msg) {
-      console.error("Strider-Browserstack: postIndex() - %s", err_msg)
+      console.error("Strider-BrowserStack: postIndex() - %s", err_msg)
       var r = {
         errors: [err_msg],
         status: "error"
@@ -82,6 +88,12 @@ module.exports = function(ctx, cb) {
       if (browserstack_api_key) {
         repo.set('browserstack_api_key', browserstack_api_key)
       }
+      if (browserstack_username) {
+        repo.set('browserstack_username', browserstack_username)
+      }
+      if (browserstack_password) {
+        repo.set('browserstack_password', browserstack_password)
+      }
       if (browserstack_browsers) {
         var invalid = false
         try {
@@ -102,6 +114,8 @@ module.exports = function(ctx, cb) {
         errors: [],
         results: {
           browserstack_api_key: repo.get('browserstack_api_key'),
+          browserstack_username: repo.get('browserstack_username'),
+          browserstack_password: repo.get('browserstack_password'),
           browserstack_browsers: repo.get('browserstack_browsers'),
         }
       }
@@ -124,6 +138,8 @@ module.exports = function(ctx, cb) {
   function browserstackPlugin(schema, opts) {
     schema.add({
       browserstack_api_key: String,
+      browserstack_username: String,
+      browserstack_password: String,
       browserstack_browsers: [],
     })
   }
