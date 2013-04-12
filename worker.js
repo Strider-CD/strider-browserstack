@@ -21,6 +21,8 @@ var HTTP_PORT
 
 var connectorProc
 
+var cleanupRun = false
+
 // Read & parse a JSON file
 function getJson(filename, cb) {
   fs.readFile(filename, function(err, data) {
@@ -36,6 +38,7 @@ function getJson(filename, cb) {
 
 // This will shut down the tunnel
 function cleanup(ctx, cb) {
+  cleanupRun = true
   var msg = "Shutting down BrowserStack Connector"
   console.log(msg)
   ctx.striderMessage(msg)
@@ -43,6 +46,10 @@ function cleanup(ctx, cb) {
   // Give BrowserStack Connector 5 seconds to gracefully stop before sending SIGKILL
   setTimeout(function() {
     connectorProc.kill("SIGKILL")
+    msg = "BrowserStack Connector is dead"
+    console.log(msg)
+    ctx.striderMessage(msg)
+
     return cb(0)
   }, 5000)
 }
@@ -114,17 +121,17 @@ function test(ctx, cb) {
     return ctx.forkProc(ctx.workingDir, tsh.cmd, tsh.args, cb)
   }
 
-  // Server is up, start BrowserStack Connector and run the tests via `npm browserstack` invocations
+  // Server is up, start BrowserStack Connector
   function serverUp() {
-    var done = false
     connectorProc = startConnector(browserStackUsername, browserStackPassword, browserStackAPIKey,
       function(exitCode) {
       console.log("Connector exited with code: %d", exitCode)
-      if (!done) {
+      // If the connector exited before the cleanup phase has run, it failed to start
+      if (!cleanupRun) {
         console.log("Killing connector")
         ctx.striderMessage("Error starting BrowserStack Connector - failing test")
         ctx.striderMessage("Shutting down server")
-        done = true
+        cleanupRun = true
         return cb(1)
       }
     })
