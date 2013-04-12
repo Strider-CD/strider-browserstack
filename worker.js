@@ -36,8 +36,24 @@ function getJson(filename, cb) {
   })
 }
 
+// Is browserStack configured for this context?
+function browserStackConfigured(ctx) {
+  var browserStackAPIKey = ctx.jobData.repo_config.browserstack_api_key
+  var browserStackUsername = ctx.jobData.repo_config.browserstack_username
+  var browserStackPassword = ctx.jobData.repo_config.browserstack_password
+
+  if (browserStackAPIKey === undefined || browserStackPassword === undefined || browserStackUsername === undefined) {
+    return false
+  }
+
+  return true
+}
+
 // This will shut down the tunnel
 function cleanup(ctx, cb) {
+  if (!browserStackConfigured(ctx) {
+    return cb(0)
+  }
   cleanupRun = true
   var msg = "Shutting down BrowserStack Connector"
   console.log(msg)
@@ -72,10 +88,9 @@ function test(ctx, cb) {
       }
     ]
   }
-  if (browserStackAPIKey === undefined || browserStackPassword === undefined || browserStackUsername === undefined) {
-    ctx.striderMessage(("BrowserStack tests detected but BrowserStack credentials have not been configured!\n"
-      + "  Please visit project config page to enter them"))
-    return cb(1)
+  // Only start browserstack if 
+  if (!browserStackConfigured(ctx) {
+    return cb(0)
   }
   var startPhaseDone = false
   // Run 
