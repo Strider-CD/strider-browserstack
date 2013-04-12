@@ -36,8 +36,9 @@ function getJson(filename, cb) {
 
 // This will shut down the tunnel
 function cleanup(ctx, cb) {
-  console.log("cleanup")
-  ctx.striderMessage("Shutting down BrowserStack Connector")
+  var msg = "Shutting down BrowserStack Connector"
+  console.log(msg)
+  ctx.striderMessage(msg)
   connectorProc.kill("SIGINT")
   // Give BrowserStack Connector 5 seconds to gracefully stop before sending SIGKILL
   setTimeout(function() {
@@ -48,7 +49,7 @@ function cleanup(ctx, cb) {
 
 // then we start the BrowserStack test process.
 function test(ctx, cb) {
-  HTTP_PORT = ctx.browsertestPort
+  HTTP_PORT = ctx.browsertestPort || 8031
 
   var browserStackAPIKey = ctx.jobData.repo_config.browserstack_api_key
   var browserStackUsername = ctx.jobData.repo_config.browserstack_username
@@ -109,7 +110,6 @@ function test(ctx, cb) {
   // Start the BrowserStack Connector. Returns childProcess object.
   function startConnector(username, password, apiKey, cb) {
     var tcmd = path.join(__dirname, "node_modules", "browserstack-cli", "bin", "cli.js") + " --ssl -k " + apiKey + " -u " + username + ":" + password + " tunnel localhost:" + HTTP_PORT
-    console.log("tcmd: ", tcmd)
     var tsh = ctx.shellWrap(tcmd)
     return ctx.forkProc(ctx.workingDir, tsh.cmd, tsh.args, cb)
   }
