@@ -51,7 +51,7 @@ function browserStackConfigured(ctx) {
 
 // This will shut down the tunnel
 function cleanup(ctx, cb) {
-  if (!browserStackConfigured(ctx) {
+  if (!browserStackConfigured(ctx)) {
     return cb(0)
   }
   cleanupRun = true
@@ -89,7 +89,7 @@ function test(ctx, cb) {
     ]
   }
   // Only start browserstack if 
-  if (!browserStackConfigured(ctx) {
+  if (!browserStackConfigured(ctx)) {
     return cb(0)
   }
   var startPhaseDone = false
