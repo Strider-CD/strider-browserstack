@@ -62,7 +62,7 @@ function cleanup(ctx, cb) {
   // Give BrowserStack Connector 5 seconds to gracefully stop before sending SIGKILL
   setTimeout(function() {
     connectorProc.kill("SIGKILL")
-    msg = "BrowserStack Connector is dead"
+    msg = "BrowserStack Connector successfully shut down"
     console.log(msg)
     ctx.striderMessage(msg)
 
@@ -166,17 +166,19 @@ function test(ctx, cb) {
         var qunitUrl = "http://localhost:" + ctx.browsertestPort + "/foo" + ctx.browsertestPath + "?testNumber=115"
         console.log("qunitUrl: %s", qunitUrl)
         // Create a Chrome worker for now.
+        var worker
         client.createWorker({
           os: 'win',
           browser: 'chrome',
           version: '27.0',
           url: qunitUrl
-        }, function(err, worker) {
+        }, function(err, w) {
           if (err) {
             console.log("Error creating browserstack worker: " + err)
             ctx.striderMessage("Error creating BrowserStack worker: " + err)
             return cb(1)
           }
+          worker = w
           ctx.striderMessage("Created BrowserStack worker")
           console.log("Created BrowserStack worker")
 
@@ -185,6 +187,12 @@ function test(ctx, cb) {
         ctx.events.on('testDone', function(data) {
           console.log("received testDone event: %j", data)
           ctx.striderMessage(JSON.stringify(data, null, '\t'))
+          if (worker) {
+            console.log("terminating BrowserStack worker")
+            return client.terminateWorker(worker.id, function() {
+                cb(data.failed)
+            })
+          }
           cb(data.failed)
         })
 
