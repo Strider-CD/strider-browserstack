@@ -52,7 +52,7 @@ function browserStackConfigured(ctx) {
   return true
 }
 
-// This will shut down the tunnel
+// This will shut down the tunnel in a nice way
 function cleanup(ctx, cb) {
   if (!browserStackConfigured(ctx)) {
     return cb(0)
@@ -74,8 +74,14 @@ function cleanup(ctx, cb) {
   }, 5000)
 }
 
-// then we start the BrowserStack test process.
+// BrowserStack test process.
 function test(ctx, cb) {
+  // Only start BrowserStack if it is configured for this project.
+
+  if (!browserStackConfigured(ctx)) {
+    return cb(0)
+  }
+
   HTTP_PORT = ctx.browsertestPort || 8031
 
   var browserStackAPIKey = ctx.jobData.repo_config.browserstack_api_key
@@ -91,10 +97,6 @@ function test(ctx, cb) {
         platform:"Windows 2008"
       }
     ]
-  }
-  // Only start browserstack if 
-  if (!browserStackConfigured(ctx)) {
-    return cb(0)
   }
   var startPhaseDone = false
   // Run 
@@ -133,7 +135,8 @@ function test(ctx, cb) {
     })
   }, HTTP_CHECK_INTERVAL)
 
-  // Start the BrowserStack Connector. Returns childProcess object.
+  // Start the BrowserStack Connector, killing previous one if PID file found. Write out PID file for new process.
+  // Wait until Connector ready.
   function startConnector(username, password, apiKey, exitCb) {
     // Check for existing tunnel PID
     fs.readFile(PIDFILE, function(err, data) {
