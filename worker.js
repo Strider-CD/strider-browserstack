@@ -84,6 +84,11 @@ function test(ctx, cb) {
     return cb(0)
   }
 
+  function log(msg) {
+    ctx.striderMessage(msg)
+    console.log(msg)
+  }
+
   HTTP_PORT = ctx.browsertestPort || 8031
 
   var browserStackAPIKey = ctx.jobData.repo_config.browserstack_api_key
@@ -102,14 +107,14 @@ function test(ctx, cb) {
   }
   var startPhaseDone = false
   // Run 
-  ctx.striderMessage("trying BrowserStack tests...")
+  log("trying BrowserStack tests...")
   // The project webserver should be available via HTTP once started.
   // This section implements a check which will attempt to make a HTTP request for /
   // expecting a 200 response code. It will try HTTP_CHECK_RETRIES times, waiting 1 second
   // between checks. If it fails after HTTP_CHECK_RETRIES times, the server process will be killed
   // and the test failed.
   var tries = 0
-  ctx.striderMessage("Waiting for webserver to come up on localhost:" + HTTP_PORT)
+  log("Waiting for webserver to come up on localhost:" + HTTP_PORT)
   var intervalId = setInterval(function() {
     // Check for http response on http://localhost:HTTP_PORT/
     request("http://localhost:"+HTTP_PORT+"/", function(err, response) {
@@ -118,7 +123,7 @@ function test(ctx, cb) {
         return
       }
       if (!err && response.statusCode) {
-        ctx.striderMessage("Got HTTP response on localhost:" + HTTP_PORT + " indicating server is up")
+        log("Got HTTP response on localhost:" + HTTP_PORT + " indicating server is up")
         startPhaseDone = true
         clearInterval(intervalId)
         serverUp()
@@ -147,8 +152,7 @@ function test(ctx, cb) {
         try {
           process.kill(data, "SIGKILL")
         } catch(e) {
-          console.log("exception: " + e)
-
+          console.debug("strider-browserstack: exception trying to kill PID %s: %s", data, e)
         }
       }
       var tcmd = path.join(__dirname, "node_modules", "browserstack-cli", "bin", "cli.js") +
@@ -165,8 +169,7 @@ function test(ctx, cb) {
       // before executing tests
       connectorProc.stdout.on('data', function(data) {
         if (/Press Ctrl-C to exit/.exec(data) !== null) {
-          ctx.striderMessage("BrowserStack tunnel is ready")
-          console.log("browserstack tunnel is up")
+          log("BrowserStack tunnel is ready")
 
           var client = browserstack.createClient({
               username: browserStackUsername,
@@ -188,13 +191,11 @@ function test(ctx, cb) {
               url: qunitUrl
             }, function(err, w) {
               if (err) {
-                console.log("Error creating browserstack worker: " + err)
-                ctx.striderMessage("Error creating BrowserStack worker: " + err)
+                log("Error creating BrowserStack worker: " + err)
                 return cb(1)
               }
               worker = w
-              ctx.striderMessage("Created BrowserStack worker: " + qunitId)
-              console.log("Created BrowserStack worker: " + qunitId)
+              log("Created BrowserStack worker: " + qunitId)
 
             })
 
@@ -206,8 +207,7 @@ function test(ctx, cb) {
                   buildStatus = 1
                 }
                 if (worker) {
-                  console.log("Terminating BrowserStack worker: " + qunitId)
-                  ctx.striderMessage("Terminating BrowserStack worker: " + qunitId)
+                  log("Terminating BrowserStack worker: " + qunitId)
                   client.terminateWorker(worker.id)
                 }
                 resultsReceived++
@@ -218,10 +218,6 @@ function test(ctx, cb) {
               }
             })
           })
-
-        
-
-
          }
       })
     })
@@ -231,12 +227,10 @@ function test(ctx, cb) {
   function serverUp() {
     startConnector(browserStackUsername, browserStackPassword, browserStackAPIKey,
       function(exitCode) {
-      console.log("Connector exited with code: %d", exitCode)
+      console.log("BrowserStack Connector exited with code: %d", exitCode)
       // If the connector exited before the cleanup phase has run, it failed to start
       if (!cleanupRun) {
-        console.log("Killing connector")
-        ctx.striderMessage("Error starting BrowserStack Connector - failing test")
-        ctx.striderMessage("Shutting down server")
+        log("Error starting BrowserStack Connector - failing test")
         cleanupRun = true
         fs.unlink(PIDFILE)
         return cb(1)
