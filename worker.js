@@ -45,7 +45,9 @@ function browserStackConfigured(ctx) {
   var browserStackUsername = ctx.jobData.repo_config.browserstack_username
   var browserStackPassword = ctx.jobData.repo_config.browserstack_password
 
-  if (browserStackAPIKey === undefined || browserStackPassword === undefined || browserStackUsername === undefined) {
+  if (browserStackAPIKey === undefined
+    || browserStackPassword === undefined
+    || browserStackUsername === undefined) {
     return false
   }
 
@@ -89,12 +91,12 @@ function test(ctx, cb) {
   var browserStackPassword = ctx.jobData.repo_config.browserstack_password
   var browserStackBrowsers = ctx.jobData.repo_config.browserstack_browsers
   if (browserStackBrowsers === undefined || browserStackBrowsers.length === 0) {
-    // XXX Some default
+    // Default to Chrome 27.0 on Windows
     browserStackBrowsers = [
       {
-        browserName:"chrome",
-        version:"",
-        platform:"Windows 2008"
+        os: 'win',
+        browser: 'chrome',
+        version: '27.0',
       }
     ]
   }
@@ -149,7 +151,8 @@ function test(ctx, cb) {
 
         }
       }
-      var tcmd = path.join(__dirname, "node_modules", "browserstack-cli", "bin", "cli.js") + " --ssl -k " + apiKey + " -u " + username + ":" + password + " tunnel localhost:" + HTTP_PORT
+      var tcmd = path.join(__dirname, "node_modules", "browserstack-cli", "bin", "cli.js") +
+        " --ssl -k " + apiKey + " -u " + username + ":" + password + " tunnel localhost:" + HTTP_PORT
       var tsh = ctx.shellWrap("exec " + tcmd)
       // TODO: Should be a timeout in case browserstack hangs on startup
       connectorProc = ctx.forkProc(ctx.workingDir, tsh.cmd, tsh.args, exitCb)
@@ -169,41 +172,55 @@ function test(ctx, cb) {
               username: browserStackUsername,
               password: browserStackPassword
           })
+          var resultsReceived = 0
+          var buildStatus = 0
+          browserStackBrowsers.forEach(function(browser) {
+            var qunitId = browser.os + "-" + browser.browser + "-" + browser.version
+            var qunitUrl = "http://localhost:" +
+                ctx.browsertestPort + "/" + qunitId + ctx.browsertestPath + "?testNumber=115"
+            console.log("qunitUrl: %s", qunitUrl)
+            // TODO: handle timeouts
+            var worker
+            client.createWorker({
+              os: browser.os,
+              browser: browser.browser,
+              version: browser.version,
+              url: qunitUrl
+            }, function(err, w) {
+              if (err) {
+                console.log("Error creating browserstack worker: " + err)
+                ctx.striderMessage("Error creating BrowserStack worker: " + err)
+                return cb(1)
+              }
+              worker = w
+              ctx.striderMessage("Created BrowserStack worker: " + qunitId)
+              console.log("Created BrowserStack worker: " + qunitId)
 
-          var qunitUrl = "http://localhost:" + ctx.browsertestPort + "/foo" + ctx.browsertestPath + "?testNumber=115"
-          console.log("qunitUrl: %s", qunitUrl)
-          // Create a Chrome worker for now.
-          // TODO: handle timeouts
-          var worker
-          client.createWorker({
-            os: 'win',
-            browser: 'chrome',
-            version: '27.0',
-            url: qunitUrl
-          }, function(err, w) {
-            if (err) {
-              console.log("Error creating browserstack worker: " + err)
-              ctx.striderMessage("Error creating BrowserStack worker: " + err)
-              return cb(1)
-            }
-            worker = w
-            ctx.striderMessage("Created BrowserStack worker")
-            console.log("Created BrowserStack worker")
+            })
 
+            // TODO: timeouts in case testDone event never received.
+            ctx.events.on('testDone', function(result) {
+              if (result.id === qunitId) {
+                ctx.striderMessage(JSON.stringify(result, null, '\t'))
+                if (result.failed !== 0) {
+                  buildStatus = 1
+                }
+                if (worker) {
+                  console.log("Terminating BrowserStack worker: " + qunitId)
+                  ctx.striderMessage("Terminating BrowserStack worker: " + qunitId)
+                  client.terminateWorker(worker.id)
+                }
+                resultsReceived++
+              }
+              // If all the results are in, finish the build
+              if (resultsReceived == browserStackBrowsers.length) {
+                cb(buildStatus)
+              }
+            })
           })
 
-          // TODO: timeouts in case testDone event never received.
-          ctx.events.on('testDone', function(data) {
-            console.log("received testDone event: %j", data)
-            ctx.striderMessage(JSON.stringify(data, null, '\t'))
-            if (worker) {
-              console.log("terminating BrowserStack worker")
-              return client.terminateWorker(worker.id, function() {
-                  cb(data.failed)
-              })
-            }
-            cb(data.failed)
-          })
+        
+
 
          }
       })
