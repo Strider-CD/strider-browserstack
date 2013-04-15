@@ -19,6 +19,9 @@ var HTTP_CHECK_INTERVAL = 1000
 // Browser Stack Connector will tunnel from this to BrowserStack Cloud for tests
 var HTTP_PORT
 
+// Path to BrowserStack Connector PID file
+var PIDFILE = path.join(__dirname, "tunnel.pid")
+
 var connectorProc
 
 var cleanupRun = false
@@ -62,6 +65,7 @@ function cleanup(ctx, cb) {
   // Give BrowserStack Connector 5 seconds to gracefully stop before sending SIGKILL
   setTimeout(function() {
     connectorProc.kill("SIGKILL")
+    fs.unlink(PIDFILE)
     msg = "BrowserStack Connector successfully shut down"
     console.log(msg)
     ctx.striderMessage(msg)
@@ -130,15 +134,80 @@ function test(ctx, cb) {
   }, HTTP_CHECK_INTERVAL)
 
   // Start the BrowserStack Connector. Returns childProcess object.
-  function startConnector(username, password, apiKey, cb) {
-    var tcmd = path.join(__dirname, "node_modules", "browserstack-cli", "bin", "cli.js") + " --ssl -k " + apiKey + " -u " + username + ":" + password + " tunnel localhost:" + HTTP_PORT
-    var tsh = ctx.shellWrap(tcmd)
-    return ctx.forkProc(ctx.workingDir, tsh.cmd, tsh.args, cb)
+  function startConnector(username, password, apiKey, exitCb) {
+    // Check for existing tunnel PID
+    fs.readFile(PIDFILE, function(err, data) {
+      if (!err && data) {
+        console.debug("strider-browserstack: found existing PIDfile, killing process %s", data)
+        try {
+          process.kill(data, "SIGKILL")
+        } catch(e) {
+          console.log("exception: " + e)
+
+        }
+      }
+      var tcmd = path.join(__dirname, "node_modules", "browserstack-cli", "bin", "cli.js") + " --ssl -k " + apiKey + " -u " + username + ":" + password + " tunnel localhost:" + HTTP_PORT
+      var tsh = ctx.shellWrap(tcmd)
+      connectorProc = ctx.forkProc(ctx.workingDir, tsh.cmd, tsh.args, exitCb)
+      fs.writeFile(PIDFILE, connectorProc.pid, function(err) {
+        if (err) {
+          console.error("strider-browserstack: could not write PID file %s", err)
+        }
+      })
+      // Wait until connector outputs "Press Ctrl-C to exit"
+      // before executing tests
+      connectorProc.stdout.on('data', function(data) {
+        if (/Press Ctrl-C to exit/.exec(data) !== null) {
+          ctx.striderMessage("BrowserStack tunnel is ready")
+          console.log("browserstack tunnel is up")
+
+          var client = browserstack.createClient({
+              username: browserStackUsername,
+              password: browserStackPassword
+          })
+
+          var qunitUrl = "http://localhost:" + ctx.browsertestPort + "/foo" + ctx.browsertestPath + "?testNumber=115"
+          console.log("qunitUrl: %s", qunitUrl)
+          // Create a Chrome worker for now.
+          // TODO: handle timeouts
+          var worker
+          client.createWorker({
+            os: 'win',
+            browser: 'chrome',
+            version: '27.0',
+            url: qunitUrl
+          }, function(err, w) {
+            if (err) {
+              console.log("Error creating browserstack worker: " + err)
+              ctx.striderMessage("Error creating BrowserStack worker: " + err)
+              return cb(1)
+            }
+            worker = w
+            ctx.striderMessage("Created BrowserStack worker")
+            console.log("Created BrowserStack worker")
+
+          })
+
+          ctx.events.on('testDone', function(data) {
+            console.log("received testDone event: %j", data)
+            ctx.striderMessage(JSON.stringify(data, null, '\t'))
+            if (worker) {
+              console.log("terminating BrowserStack worker")
+              return client.terminateWorker(worker.id, function() {
+                  cb(data.failed)
+              })
+            }
+            cb(data.failed)
+          })
+
+         }
+      })
+    })
   }
 
   // Server is up, start BrowserStack Connector
   function serverUp() {
-    connectorProc = startConnector(browserStackUsername, browserStackPassword, browserStackAPIKey,
+    startConnector(browserStackUsername, browserStackPassword, browserStackAPIKey,
       function(exitCode) {
       console.log("Connector exited with code: %d", exitCode)
       // If the connector exited before the cleanup phase has run, it failed to start
@@ -147,57 +216,11 @@ function test(ctx, cb) {
         ctx.striderMessage("Error starting BrowserStack Connector - failing test")
         ctx.striderMessage("Shutting down server")
         cleanupRun = true
+        fs.unlink(PIDFILE)
         return cb(1)
       }
     })
 
-    // Wait until connector outputs "Press Ctrl-C to exit"
-    // before executing tests
-    connectorProc.stdout.on('data', function(data) {
-      if (/Press Ctrl-C to exit/.exec(data) !== null) {
-        ctx.striderMessage("BrowserStack tunnel is ready")
-        console.log("browserstack tunnel is up")
-
-        var client = browserstack.createClient({
-            username: browserStackUsername,
-            password: browserStackPassword
-        })
-
-        var qunitUrl = "http://localhost:" + ctx.browsertestPort + "/foo" + ctx.browsertestPath + "?testNumber=115"
-        console.log("qunitUrl: %s", qunitUrl)
-        // Create a Chrome worker for now.
-        var worker
-        client.createWorker({
-          os: 'win',
-          browser: 'chrome',
-          version: '27.0',
-          url: qunitUrl
-        }, function(err, w) {
-          if (err) {
-            console.log("Error creating browserstack worker: " + err)
-            ctx.striderMessage("Error creating BrowserStack worker: " + err)
-            return cb(1)
-          }
-          worker = w
-          ctx.striderMessage("Created BrowserStack worker")
-          console.log("Created BrowserStack worker")
-
-        })
-
-        ctx.events.on('testDone', function(data) {
-          console.log("received testDone event: %j", data)
-          ctx.striderMessage(JSON.stringify(data, null, '\t'))
-          if (worker) {
-            console.log("terminating BrowserStack worker")
-            return client.terminateWorker(worker.id, function() {
-                cb(data.failed)
-            })
-          }
-          cb(data.failed)
-        })
-
-       }
-    })
   }
 }
 
