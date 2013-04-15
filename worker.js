@@ -147,7 +147,7 @@ function test(ctx, cb) {
         }
       }
       var tcmd = path.join(__dirname, "node_modules", "browserstack-cli", "bin", "cli.js") + " --ssl -k " + apiKey + " -u " + username + ":" + password + " tunnel localhost:" + HTTP_PORT
-      var tsh = ctx.shellWrap(tcmd)
+      var tsh = ctx.shellWrap("exec " + tcmd)
       connectorProc = ctx.forkProc(ctx.workingDir, tsh.cmd, tsh.args, exitCb)
       fs.writeFile(PIDFILE, connectorProc.pid, function(err) {
         if (err) {
