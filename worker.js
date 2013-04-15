@@ -151,6 +151,7 @@ function test(ctx, cb) {
       }
       var tcmd = path.join(__dirname, "node_modules", "browserstack-cli", "bin", "cli.js") + " --ssl -k " + apiKey + " -u " + username + ":" + password + " tunnel localhost:" + HTTP_PORT
       var tsh = ctx.shellWrap("exec " + tcmd)
+      // TODO: Should be a timeout in case browserstack hangs on startup
       connectorProc = ctx.forkProc(ctx.workingDir, tsh.cmd, tsh.args, exitCb)
       fs.writeFile(PIDFILE, connectorProc.pid, function(err) {
         if (err) {
@@ -191,6 +192,7 @@ function test(ctx, cb) {
 
           })
 
+          // TODO: timeouts in case testDone event never received.
           ctx.events.on('testDone', function(data) {
             console.log("received testDone event: %j", data)
             ctx.striderMessage(JSON.stringify(data, null, '\t'))
