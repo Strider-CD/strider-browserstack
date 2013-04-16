@@ -202,7 +202,7 @@ function test(ctx, cb) {
             // TODO: timeouts in case testDone event never received.
             ctx.events.on('testDone', function(result) {
               if (result.id === qunitId) {
-                log("results for tests on " + result.id + ": " + result.total + " total " +
+                log("Results for tests on " + result.id + ": " + result.total + " total " +
                   result.failed + " failed " + result.passed + " passed " + result.runtime + " seconds runtime") 
                 if (result.failed !== 0) {
                   buildStatus = 1
