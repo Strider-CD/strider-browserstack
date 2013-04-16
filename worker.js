@@ -63,10 +63,10 @@ function cleanup(ctx, cb) {
   var msg = "Shutting down BrowserStack Connector"
   console.log(msg)
   ctx.striderMessage(msg)
-  connectorProc.kill("SIGINT")
+  if (connectorProc) connectorProc.kill("SIGINT")
   // Give BrowserStack Connector 5 seconds to gracefully stop before sending SIGKILL
   setTimeout(function() {
-    connectorProc.kill("SIGKILL")
+    if (connectorProc) connectorProc.kill("SIGKILL")
     fs.unlink(PIDFILE)
     msg = "BrowserStack Connector successfully shut down"
     console.log(msg)
