@@ -107,7 +107,7 @@ function test(ctx, cb) {
   }
   var startPhaseDone = false
   // Run 
-  log("trying BrowserStack tests...")
+  log("Trying BrowserStack tests...")
   // The project webserver should be available via HTTP once started.
   // This section implements a check which will attempt to make a HTTP request for /
   // expecting a 200 response code. It will try HTTP_CHECK_RETRIES times, waiting 1 second
@@ -202,7 +202,8 @@ function test(ctx, cb) {
             // TODO: timeouts in case testDone event never received.
             ctx.events.on('testDone', function(result) {
               if (result.id === qunitId) {
-                ctx.striderMessage(JSON.stringify(result, null, '\t'))
+                log("results for tests on " + result.id + ": " + result.total + " total " +
+                  result.failed + " failed " + result.passed + " passed " + result.runtime + " seconds runtime") 
                 if (result.failed !== 0) {
                   buildStatus = 1
                 }
