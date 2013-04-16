@@ -188,7 +188,8 @@ function test(ctx, cb) {
               os: browser.os,
               browser: browser.browser,
               version: browser.version,
-              url: qunitUrl
+              url: qunitUrl,
+              timeout: 3600
             }, function(err, w) {
               if (err) {
                 log("Error creating BrowserStack worker: " + err)
