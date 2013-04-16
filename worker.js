@@ -180,7 +180,7 @@ function test(ctx, cb) {
           browserStackBrowsers.forEach(function(browser) {
             var qunitId = browser.os + "-" + browser.browser + "-" + browser.version
             var qunitUrl = "http://localhost:" +
-                ctx.browsertestPort + "/" + qunitId + ctx.browsertestPath + "?testNumber=115"
+                ctx.browsertestPort + "/" + qunitId + ctx.browsertestPath
             console.log("qunitUrl: %s", qunitUrl)
             // TODO: handle timeouts
             var worker
