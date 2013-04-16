@@ -204,7 +204,7 @@ function test(ctx, cb) {
             ctx.events.on('testDone', function(result) {
               if (result.id === qunitId) {
                 log("Results for tests on " + result.id + ": " + result.total + " total " +
-                  result.failed + " failed " + result.passed + " passed " + result.runtime + " seconds runtime") 
+                  result.failed + " failed " + result.passed + " passed " + result.runtime + " ms runtime") 
                 if (result.failed !== 0) {
                   buildStatus = 1
                 }
