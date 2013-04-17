@@ -187,7 +187,6 @@ function test(ctx, cb) {
             var qunitUrl = "http://localhost:" +
                 ctx.browsertestPort + "/" + qunitId + ctx.browsertestPath
             console.log("qunitUrl: %s", qunitUrl)
-            // TODO: handle timeouts
             var worker
             client.createWorker({
               os: browser.os,
@@ -205,7 +204,6 @@ function test(ctx, cb) {
 
             })
 
-            // TODO: timeouts in case testDone event never received.
             setTimeout(function() {
               if (!worker.done) {
                 log("ERROR: Timeout of " + BROWSERSTACK_TEST_TIMEOUT + " ms exceeded for " + qunitId + " - terminating ")
