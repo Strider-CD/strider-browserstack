@@ -22,6 +22,10 @@ var HTTP_PORT
 // Path to BrowserStack Connector PID file
 var PIDFILE = path.join(__dirname, "tunnel.pid")
 
+// BrowserStack test timeout in ms
+// Permits self-healing in worst-case hang
+var BROWSERSTACK_TEST_TIMEOUT = 1000 * 60 * 45 // 45 minutes
+
 var connectorProc
 
 var cleanupRun = false
@@ -177,6 +181,7 @@ function test(ctx, cb) {
           })
           var resultsReceived = 0
           var buildStatus = 0
+          var resultMessages = []
           browserStackBrowsers.forEach(function(browser) {
             var qunitId = browser.os + "-" + browser.browser + "-" + browser.version
             var qunitUrl = "http://localhost:" +
@@ -196,26 +201,36 @@ function test(ctx, cb) {
                 return cb(1)
               }
               worker = w
-              log("Created BrowserStack worker: " + qunitId)
+              log("Created BrowserStack worker: " + qunitId + " (browserstack id: " + worker.id + ")")
 
             })
 
             // TODO: timeouts in case testDone event never received.
+            setTimeout(function() {
+              if (!worker.done) {
+                log("ERROR: Timeout of " + BROWSERSTACK_TEST_TIMEOUT + " ms exceeded for " + qunitId + " - terminating ")
+                ctx.events.emit('testDone', { id: qunitId, total:0, failed:1, passed:0, runtime: BROWSERSTACK_TEST_TIMEOUT })
+              }
+            }, BROWSERSTACK_TEST_TIMEOUT)
             ctx.events.on('testDone', function(result) {
               if (result.id === qunitId) {
-                log("Results for tests on " + result.id + ": " + result.total + " total " +
+                resultMessages.push("Results for tests on " + result.id + ": " + result.total + " total " +
                   result.failed + " failed " + result.passed + " passed " + result.runtime + " ms runtime") 
                 if (result.failed !== 0) {
                   buildStatus = 1
                 }
                 if (worker) {
-                  log("Terminating BrowserStack worker: " + qunitId)
+                  log("Terminating BrowserStack worker: " + qunitId + " (browserstack id: " + worker.id + ")")
                   client.terminateWorker(worker.id)
+                  worker.done = true
                 }
                 resultsReceived++
               }
               // If all the results are in, finish the build
               if (resultsReceived == browserStackBrowsers.length) {
+                resultMessages.forEach(function(msg) {
+                  log(msg)
+                })
                 cb(buildStatus)
               }
             })
