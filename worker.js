@@ -182,6 +182,7 @@ function test(ctx, cb) {
           var resultsReceived = 0
           var buildStatus = 0
           var resultMessages = []
+          var finished = false
           browserStackBrowsers.forEach(function(browser) {
             var qunitId = browser.os + "-" + browser.browser + "-" + browser.version
             var qunitUrl = "http://localhost:" +
@@ -225,7 +226,8 @@ function test(ctx, cb) {
                 resultsReceived++
               }
               // If all the results are in, finish the build
-              if (resultsReceived == browserStackBrowsers.length) {
+              if (resultsReceived == browserStackBrowsers.length && !finished) {
+                finished = true
                 resultMessages.forEach(function(msg) {
                   log(msg)
                 })
