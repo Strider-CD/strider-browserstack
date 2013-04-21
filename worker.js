@@ -71,7 +71,7 @@ function cleanup(ctx, cb) {
   // Give BrowserStack Connector 5 seconds to gracefully stop before sending SIGKILL
   setTimeout(function() {
     if (connectorProc) connectorProc.kill("SIGKILL")
-    fs.unlink(PIDFILE)
+    fs.unlink(PIDFILE, function() {})
     msg = "BrowserStack Connector successfully shut down"
     console.log(msg)
     ctx.striderMessage(msg)
@@ -184,16 +184,17 @@ function test(ctx, cb) {
           var resultMessages = []
           var finished = false
           browserStackBrowsers.forEach(function(browser) {
-            var qunitId = browser.os + "-" + browser.browser + "-" + browser.version
-            var qunitUrl = "http://localhost:" +
-                ctx.browsertestPort + "/" + qunitId + ctx.browsertestPath
-            console.log("qunitUrl: %s", qunitUrl)
+            var browserId = browser.os + "-" + browser.browser + "-" + browser.version
+            // ctx.browsertestPort and ctx.browsertestPath come from the `prepare` phase test
+            // plugin - e.g. strider-qunit.
+            var testUrl = "http://localhost:" +
+                ctx.browsertestPort + "/" + browserId + ctx.browsertestPath
             var worker
             client.createWorker({
               os: browser.os,
               browser: browser.browser,
               version: browser.version,
-              url: qunitUrl,
+              url: testUrl,
               timeout: 3600
             }, function(err, w) {
               if (err) {
@@ -201,32 +202,31 @@ function test(ctx, cb) {
                 return cb(1)
               }
               worker = w
-              log("Created BrowserStack worker: " + qunitId + " (browserstack id: " + worker.id + ")")
+              log("Created BrowserStack worker: " + browserId + " (browserstack id: " + worker.id + ")")
 
             })
 
             setTimeout(function() {
               if (!worker.done) {
-                log("ERROR: Timeout of " + BROWSERSTACK_TEST_TIMEOUT + " ms exceeded for " + qunitId + " - terminating ")
-                ctx.events.emit('testDone', { id: qunitId, total:0, failed:1, passed:0, runtime: BROWSERSTACK_TEST_TIMEOUT })
+                log("ERROR: Timeout of " + BROWSERSTACK_TEST_TIMEOUT + " ms exceeded for " + browserId + " - terminating ")
+                ctx.events.emit('testDone', { id: browserId, total:0, failed:1, passed:0, runtime: BROWSERSTACK_TEST_TIMEOUT })
               }
             }, BROWSERSTACK_TEST_TIMEOUT)
             ctx.events.on('testDone', function(result) {
-              if (result.id === qunitId) {
+              if (finished) return
+              if (result.id === browserId && worker && !worker.done) {
                 resultMessages.push("Results for tests on " + result.id + ": " + result.total + " total " +
                   result.failed + " failed " + result.passed + " passed " + result.runtime + " ms runtime") 
                 if (result.failed !== 0) {
                   buildStatus = 1
                 }
-                if (worker) {
-                  log("Terminating BrowserStack worker: " + qunitId + " (browserstack id: " + worker.id + ")")
-                  client.terminateWorker(worker.id)
-                  worker.done = true
-                }
+                log("Terminating BrowserStack worker: " + browserId + " (browserstack id: " + worker.id + ")")
+                client.terminateWorker(worker.id)
+                worker.done = true
                 resultsReceived++
               }
               // If all the results are in, finish the build
-              if (resultsReceived == browserStackBrowsers.length && !finished) {
+              if (resultsReceived == browserStackBrowsers.length) {
                 finished = true
                 resultMessages.forEach(function(msg) {
                   log(msg)
@@ -249,7 +249,7 @@ function test(ctx, cb) {
       if (!cleanupRun) {
         log("Error starting BrowserStack Connector - failing test")
         cleanupRun = true
-        fs.unlink(PIDFILE)
+        fs.unlink(PIDFILE, function() {})
         return cb(1)
       }
     })
