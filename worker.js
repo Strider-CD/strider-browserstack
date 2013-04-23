@@ -4,16 +4,10 @@
 
 
 var browserstack = require('browserstack')
+var check = require('httpcheck')
 var fs = require('fs')
 var path = require('path')
 var request = require('request')
-
-// # of tries for application-under-test webserver to start up on specified port
-// We test once per second
-var HTTP_CHECK_RETRIES = 10
-
-// Interval in between HTTP checks in ms
-var HTTP_CHECK_INTERVAL = 1000
 
 // Port on which the application-under-test webserver should bind to on localhost.
 // Browser Stack Connector will tunnel from this to BrowserStack Cloud for tests
@@ -119,32 +113,16 @@ function test(ctx, cb) {
   // and the test failed.
   var tries = 0
   log("Waiting for webserver to come up on localhost:" + HTTP_PORT)
-  var intervalId = setInterval(function() {
-    // Check for http response on http://localhost:HTTP_PORT/
-    request("http://localhost:"+HTTP_PORT+"/", function(err, response) {
-      if (startPhaseDone) {
-        clearInterval(intervalId)
-        return
-      }
-      if (!err && response.statusCode) {
-        log("Got HTTP response on localhost:" + HTTP_PORT + " indicating server is up")
-        startPhaseDone = true
-        clearInterval(intervalId)
-        serverUp()
-      } else {
-        tries++
-        console.log("Error on localhost:%d: %s", HTTP_PORT, err)
-        if (tries >= HTTP_CHECK_RETRIES) {
-          var msg = ("HTTP check on localhost:" + HTTP_PORT + " failed after " + tries
-            + " retries, server not up - failing test")
-          ctx.striderMessage(msg)
-          clearInterval(intervalId)
-          startPhaseDone = true
-          return cb(1)
-        }
-      }
-    })
-  }, HTTP_CHECK_INTERVAL)
+
+  check({url:"http://localhost:"+HTTP_PORT+"/", log:log}, function(err) {
+    if (err) {
+      clearInterval(intervalId)
+      startPhaseDone = true
+      return cb(1)
+    }
+    startPhaseDone = true
+    serverUp()
+  })
 
   // Start the BrowserStack Connector, killing previous one if PID file found. Write out PID file for new process.
   // Wait until Connector ready.

@@ -20,6 +20,7 @@
   "dependencies": {
     "browserstack-cli": "~0.2.5",
     "request": "~2.16.6",
-    "browserstack": "~0.2.0"
+    "browserstack": "~0.2.0",
+    "httpcheck": "0.0.1"
   }
 }
