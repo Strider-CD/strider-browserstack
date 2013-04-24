@@ -85,15 +85,9 @@ module.exports = function(ctx, cb) {
         return error("You must have access level greater than 0 in order to be able to configure Browserstack.");
       }
       var q = {$set:{}}
-      if (browserstack_api_key) {
-        repo.set('browserstack_api_key', browserstack_api_key)
-      }
-      if (browserstack_username) {
-        repo.set('browserstack_username', browserstack_username)
-      }
-      if (browserstack_password) {
-        repo.set('browserstack_password', browserstack_password)
-      }
+      repo.set('browserstack_api_key', browserstack_api_key)
+      repo.set('browserstack_username', browserstack_username)
+      repo.set('browserstack_password', browserstack_password)
       if (browserstack_browsers) {
         var invalid = false
         try {
