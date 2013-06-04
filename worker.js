@@ -154,7 +154,8 @@ function test(ctx, cb) {
 
           var client = browserstack.createClient({
               username: browserStackUsername,
-              password: browserStackPassword
+              password: browserStackPassword,
+              version: 2,
           })
           var resultsReceived = 0
           var buildStatus = 0
