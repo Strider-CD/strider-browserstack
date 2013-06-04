@@ -192,6 +192,7 @@ function test(ctx, cb) {
             }, BROWSERSTACK_TEST_TIMEOUT)
             ctx.events.on('testDone', function(result) {
               if (finished) return
+              var tasks = []
               if (result.id === browserId && worker && !worker.done) {
                 resultMessages.push("Results for tests on " + result.id + ": " + result.total + " total " +
                   result.failed + " failed " + result.passed + " passed " + result.runtime + " ms runtime") 
@@ -201,6 +202,7 @@ function test(ctx, cb) {
                 log("Terminating BrowserStack worker: " + browserId + " (browserstack id: " + worker.id + ")")
                 client.terminateWorker(worker.id)
                 worker.done = true
+                tasks.push({id:result.id, data:{total:result.total, failed: result.failed, passed:result.passed, runtime:result.runtime}})
                 resultsReceived++
               }
               // If all the results are in, finish the build
@@ -209,7 +211,8 @@ function test(ctx, cb) {
                 resultMessages.forEach(function(msg) {
                   log(msg)
                 })
-                cb(buildStatus)
+                console.dir(tasks)
+                cb(buildStatus, tasks)
               }
             })
           })
