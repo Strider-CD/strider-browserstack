@@ -43,9 +43,9 @@ function browserStackConfigured(ctx) {
   var browserStackUsername = ctx.jobData.repo_config.browserstack_username
   var browserStackPassword = ctx.jobData.repo_config.browserstack_password
 
-  if (browserStackAPIKey === undefined
-    || browserStackPassword === undefined
-    || browserStackUsername === undefined) {
+  if (!browserStackAPIKey
+    || !browserStackPassword
+    || !browserStackUsername) {
     return false
   }
 
