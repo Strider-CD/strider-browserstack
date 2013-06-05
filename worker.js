@@ -194,6 +194,7 @@ function test(ctx, cb) {
               if (finished) return
               var tasks = []
               if (result.id === browserId && worker && !worker.done) {
+                tasks.push({id:result.id, data:{total:result.total, failed: result.failed, passed:result.passed, runtime:result.runtime}})
                 resultMessages.push("Results for tests on " + result.id + ": " + result.total + " total " +
                   result.failed + " failed " + result.passed + " passed " + result.runtime + " ms runtime") 
                 if (result.failed !== 0) {
@@ -202,7 +203,6 @@ function test(ctx, cb) {
                 log("Terminating BrowserStack worker: " + browserId + " (browserstack id: " + worker.id + ")")
                 client.terminateWorker(worker.id)
                 worker.done = true
-                tasks.push({id:result.id, data:{total:result.total, failed: result.failed, passed:result.passed, runtime:result.runtime}})
                 resultsReceived++
               }
               // If all the results are in, finish the build
@@ -211,7 +211,7 @@ function test(ctx, cb) {
                 resultMessages.forEach(function(msg) {
                   log(msg)
                 })
-                console.dir(tasks)
+                console.log("browserstack tasks: %j", tasks)
                 cb(buildStatus, tasks)
               }
             })
