@@ -193,7 +193,7 @@ function test(ctx, cb) {
             ctx.events.on('testDone', function(result) {
               if (finished) return
               if (result.id === browserId && worker && !worker.done) {
-                tasks.push({id:result.id, data:{total:result.total, failed: result.failed, passed:result.passed, runtime:result.runtime}})
+                tasks.push({id:"browserstack", data:{total:result.total, failed: result.failed, passed:result.passed, runtime:result.runtime, id:result.id}})
                 resultMessages.push("Results for tests on " + result.id + ": " + result.total + " total " +
                   result.failed + " failed " + result.passed + " passed " + result.runtime + " ms runtime") 
                 if (result.failed !== 0) {
