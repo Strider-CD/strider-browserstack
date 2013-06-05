@@ -160,6 +160,7 @@ function test(ctx, cb) {
           var resultsReceived = 0
           var buildStatus = 0
           var resultMessages = []
+          var tasks = []
           var finished = false
           browserStackBrowsers.forEach(function(browser) {
             var browserId = browser.os + "-" + browser.browser + "-" + browser.version
@@ -183,7 +184,6 @@ function test(ctx, cb) {
               log("Created BrowserStack worker: " + browserId + " (browserstack id: " + worker.id + ")")
 
             })
-
             setTimeout(function() {
               if (!worker.done) {
                 log("ERROR: Timeout of " + BROWSERSTACK_TEST_TIMEOUT + " ms exceeded for " + browserId + " - terminating ")
@@ -192,7 +192,6 @@ function test(ctx, cb) {
             }, BROWSERSTACK_TEST_TIMEOUT)
             ctx.events.on('testDone', function(result) {
               if (finished) return
-              var tasks = []
               if (result.id === browserId && worker && !worker.done) {
                 tasks.push({id:result.id, data:{total:result.total, failed: result.failed, passed:result.passed, runtime:result.runtime}})
                 resultMessages.push("Results for tests on " + result.id + ": " + result.total + " total " +
