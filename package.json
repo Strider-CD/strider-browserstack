@@ -20,7 +20,7 @@
   "dependencies": {
     "browserstack-cli": "https://github.com/dbrans/browserstack-cli/archive/master.tar.gz",
     "request": "~2.16.6",
-    "browserstack": "~0.2.0",
+    "browserstack": "https://github.com/scottgonzalez/node-browserstack.git",
     "httpcheck": "0.0.1"
   }
 }
