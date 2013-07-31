@@ -1,61 +1,89 @@
 <style>
-.version{
-  float:left;
-  padding:5px;
-  border:1px solid #ddd;
-  border-left:none;
+
+.version {
+  display: inline-block;
+  padding: 5px 5px 0;
+  border: 1px solid #ddd;
+  border-left: none;
 }
-.os, .browser{
+
+.version:first-child {
+  border-left: 1px solid #ddd;
+}
+
+.os, .browser {
   clear:both;
   padding-top:2em;
 }
-.browser h3{
+
+.browser h3 {
 }
 
-#browserstack_config label{
+#browserstack_config label {
   display:inline; padding:5px;
 }
-</style>
-<script src="/ext/strider-browserstack/browserstack_config.js"> </script> 
-<div id="browserstack_config" class="tab-pane widget">
-  <div class="row-fluid">
-    <div class="span10">
-      <h3>BrowserStack Settings</h3>
-      <p></p>
-      <hr/>
-      <form class="well">
-        <fieldset>
-          <legend>BrowserStack Credentials</legend>
-          <div class="alert alert-success hide"></div>
-          <div class="row details">
-            <div class="span8">
-              <div class="control-group">
-                <div class="controls">
-                  <label>API Key
-                    <input size="25" type="text" name="browserstack_api_key" placeholder="browserstack API key" class="browserstack-api-key xlarge"/>
-                  </label>
-                  <label>Username
-                    <input size="25" type="text" name="browserstack_username" placeholder="browserstack username" class="browserstack-username xlarge"/>
-                  </label>
-                  <label>Password
-                    <input size="25" type="text" name="browserstack_password" placeholder="browserstack password" class="browserstack-password xlarge"/>
-                  </label>
-                  <a id="browserstack-save" class="btn btn-primary btn-save-browserstack">Save</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </fieldset>
-      </form>
-      
 
-      <div class='well'>
-        <div id = "browsers">Loading...</div>
-        <br style='clear:both;' />
-        <a id="browserstack-save" class="btn btn-primary btn-save-browserstack">Save</a>
+#browserstack_config .browsers-list input {
+  margin: 3px auto;
+}
+
+#browserstack_config .credentials {
+  margin-bottom: 10px;
+}
+
+#browserstack_config .browsers-list {
+  margin-top: 10px;
+}
+
+</style>
+<form id="browserstack_config" class="tab-pane">
+  <h3>BrowserStack Settings</h3>
+  <p></p>
+  <hr/>
+  <div class="well credentials">
+    <fieldset>
+      <legend>BrowserStack Credentials</legend>
+      <div class="control-group">
+        <div class="controls">
+          <label>API Key
+            <input size="25" type="text"
+                   ng-model="data.browserstack_api_key"
+                   placeholder="browserstack API key" class="xlarge"/>
+          </label>
+          <label>Username
+            <input size="25" type="text"
+                   ng-model="data.browserstack_username"
+                   placeholder="browserstack username" class="xlarge"/>
+          </label>
+          <label>Password
+            <input size="25" type="text"
+                   ng-model="data.browserstack_password"
+                   placeholder="browserstack password" class="xlarge"/>
+          </label>
+        </div>
+      </div>
+    </fieldset>
+  </div>
+
+  <button ng-click="save()" type="submit" class="btn btn-primary">Save</button>
+  <button ng-click="clear()" class="btn">Clear Browsers</button>
+
+  <div class="well browsers-list">
+    <div ng-repeat="(os, browsers) in groupedBrowsers" class="os">
+      <h2>[[ fancyNames[os] || os ]]</h2>
+      <div ng-repeat="(name, versions) in browsers" class="browser">
+        <h3>[[ fancyNames[name] || name ]]</h3>
+        <div class="versions">
+          <div ng-repeat="version in versions" class="version">
+            <label>
+              [[ version.version || 'latest' ]]
+              <input type="checkbox"
+                     ng-model="browser_map[version.complete_name]"
+                     value="version.complete_name">
+            </label>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-</div>
-<script>
-</script>
+</form>

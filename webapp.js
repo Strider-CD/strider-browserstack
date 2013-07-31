@@ -153,6 +153,9 @@ module.exports = function(ctx, cb) {
   ctx.registerPanel('project_config', {
     src: path.join(__dirname, "templates", "project_config.html"),
     title: "BrowserStack Config",
+    controller: 'BrowserStackCtrl',
+    plugin_name: 'strider-browserstack',
+    data: ['browserstack_api_key', 'browserstack_username', 'browserstack_password', 'browserstack_browsers'],
     id:"browserstack_config",
   })
 
