@@ -4,7 +4,7 @@
   "description": "Strider support for Browserstack.com",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jshint && mocha -R tap"
   },
   "repository": {
     "type": "git",
@@ -22,5 +22,10 @@
     "request": "~2.16.6",
     "browserstack": "~0.2.0",
     "httpcheck": "0.0.1"
+  },
+  "devDependencies": {
+    "chai": "~1.8.1",
+    "mocha": "~1.14.0",
+    "jshint": "~2.3.0"
   }
 }
