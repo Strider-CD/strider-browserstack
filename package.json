@@ -19,13 +19,13 @@
   "gitHead": "c95fd1ac6bd0d3707b549cdbd432a41723613ed4",
   "dependencies": {
     "browserstack-cli": "https://github.com/BrowserSwarm/browserstack-cli/archive/master.tar.gz",
-    "request": "~2.16.6",
-    "browserstack": "~0.2.0",
-    "httpcheck": "0.0.1"
+    "request": "~2.79.0",
+    "browserstack": "~1.5.0",
+    "httpcheck": "0.3.0"
   },
   "devDependencies": {
-    "chai": "~1.8.1",
-    "mocha": "~1.14.0",
-    "jshint": "~2.3.0"
+    "chai": "~3.5.0",
+    "mocha": "~3.2.0",
+    "jshint": "~2.9.4"
   }
 }
